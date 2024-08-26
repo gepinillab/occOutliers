@@ -19,5 +19,5 @@ Imports:
   raster,
   sp,
   stats
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.1
 VignetteBuilder: knitr
