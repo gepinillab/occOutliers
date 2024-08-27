@@ -1,34 +1,21 @@
-
 #' omit outlying pres
 #' @param xy data.frame with 2 columns
-#' @param percent numeric on [0,100]
-#' @param unin character; input units. option are "m" and "km"
-#' @param unout character; input units. option are "ha","km2", "m2"
-# @param ... additional functions to be passed to \code{\link[raster]{writeRaster}}
-# @description  Divide raster by the sum of all cells.
-# @export
-# unin = c("m");  unout ='m2'
-.presPercentile=function (xy, percent = 95, unin = c("m", "km"), unout = c("ha","km2", "m2")) {
-  # for testing
-  # xy=pres; percent = NULL; unin = c("m", "km"); unout = c("ha","km2", "m2")
-  #if (!inherits(xy, "SpatialPoints")) # not needed; i already check it
-    #stop("xy should be of class SpatialPoints")
+#' @param percent numeric on [0, 100]
+#' @export
+.presPercentile <- function (xy, percent = 95) {
   if (ncol(sp::coordinates(xy)) > 2)
     stop("xy should be defined in two dimensions")
   pfs <- sp::proj4string(xy)
-  if(!is.null(percent)){
+  if (!is.null(percent)) {
     if (length(percent) > 1)
       stop("only one value is required for percent")
     if (percent > 100) {
-      warning("Using all relocations (percent>100)")
+      warning("Using all relocations (percent > 100)")
       percent <- 100
     }
   }
-  unin <- match.arg(unin)
-  unout <- match.arg(unout)
   if (inherits(xy, "SpatialPointsDataFrame")) {
     if (ncol(xy) != 1) {
-      #warning("xy should contain only one column (the id of the animals), id ignored")
       id <- factor(rep("a", nrow(as.data.frame(xy))))
     } else {
       id <- xy[[1]]
@@ -41,10 +28,13 @@
   id <- factor(id)
   xy <- as.data.frame(sp::coordinates(xy))
   r <- split(xy, id)
+  print(r)
   est.cdg <- function(xy) apply(xy, 2, mean)
   cdg <- lapply(r, est.cdg)
+  print(cdg)
   levid <- levels(id)
-  res =lapply(1:length(r), function(i) {
+  print(levid)
+  res <- lapply(1:length(r), function(i) {
     k <- levid[i]
     df.t <- r[[levid[i]]]
     cdg.t <- cdg[[levid[i]]]
@@ -54,14 +44,14 @@
     }
     di <- apply(df.t, 1, dist.cdg)
     key <- c(1:length(di))
-    if(!is.null(percent)){
-      acons <- key[di <= stats::quantile(di, percent/100)]
-    } else { acons=key }
+    if (!is.null(percent)) {
+      acons <- key[di <= stats::quantile(di, percent / 100)]
+    } else { acons = key }
     xy.t <- df.t[acons, ]
-    sp::coordinates(xy.t)=c(1,2)
-    return(list(xy.t=xy.t,dist.from.centroid=di))
+    sp::coordinates(xy.t) <- c(1,2)
+    return(list(xy.t = xy.t, dist.from.centroid = di))
   })
-  res
+  return(res)
 }
 
 #' find records mor than 1.5 times the interquartile range beyond the upper quartile 

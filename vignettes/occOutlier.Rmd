@@ -31,19 +31,22 @@ library(sp)
 
 We start by finding obvious spatial outlier.
 ```{r}
+# Load presence records
 myPres <- read.csv(system.file('extdata/SpeciesCSVs/Astraea_macroura.csv',
                                package = 'occOutliers'))
 myPres <- myPres[complete.cases(myPres), ]
 sp::coordinates(myPres) <- c(1, 2)
-myEnv <- terra::rast(system.file('extdata/envs.tif',
+# Load environmental data
+myEnv <- raster::stack(system.file('extdata/envs.tif',
                                  package = 'occOutliers'))
-myPresDF=sp::SpatialPointsDataFrame(myPres,data.frame(raster::extract(myEnv,myPres)))
+myPresDF <- sp::SpatialPointsDataFrame(myPres,data.frame(raster::extract(myEnv,myPres)))
 
-presOut=findOutlyingPoints(pres=myPresDF,
-                           spOutliers=TRUE,
-                           pval=1e-5)
-world.shp=readRDS(system.file('extdata/worldShpMollwide.rds',package='occOutliers'))
-plotOutliers(presOut,shpToPlot = world.shp)
+presOut <- findOutlyingPoints(pres = myPresDF,
+                              spOutliers = TRUE,
+                              pval = 1e-5)
+worldShp <- readRDS(system.file('extdata/worldShpMollwide.rds',
+                                package = 'occOutliers'))
+plotOutliers(presOut,shpToPlot = worldShp)
 ```
 
 Using the IQR test
