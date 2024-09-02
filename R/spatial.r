@@ -1,3 +1,121 @@
+#' @title Find outlying occurrence data in geographic space
+#' @description Spatial outliers
+#' @param pres a `SpatialPoints` or `SpatialPointsDataFrame` object describing the locations of species records. A `SpatialPointsDataFrame` containing the values of environmental variables to be used must be supplied if `envOutliers=TRUE`
+#' @param method character; options are 'iqr', 'grubbs', 'dixon', 'rosner'
+#' @param pvalSet user-specified p-value for assessing the significance of Grubbs test statistic.
+#' @param checkPairs logical; check for a single pair of outliers using the Grubbs test. This can only be performed for sample sizes <30. Only a single test is used because repeating it tends to throw out more points than seem reasonable, by eye. The value has no effect unless `method='grubbs'`.
+#' @param kRosner integer between 1 and 10. Determines the number of outliers suspected with a Rosner test. The value has no effect unless `method='rosner'`.
+# @keywords
+#' @export
+#'
+#' @examples
+#' myPres=read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
+#'                             package='occOutliers'))
+#' myPres=myPres[complete.cases(myPres),]
+#' sp::coordinates(myPres)=c(1,2)
+#' presOut=findSpatialOutliers(pres=myPres, pvalSet=1e-5)
+#' 
+#' @return Returns the indices of spatial outliers
+#' @author Cory Merow <cory.merow@@gmail.com>
+findSpatialOutliers2 <- function(pres,
+                                 pvalSet = 1e-5,
+                                 method = 'grubbs',
+                                 checkPairs = TRUE,
+                                 kRosner = NULL) {
+  if (any(method == 'grubbs')) {
+    pval <-  0
+    while (pval < pvalSet & length(pres) > 3) {
+      # i want to recompute the distances once an outlier is removed because the 
+      # outlier biased the centroid of the group, which influences distances
+      dists <- .presPercentile2(pres)[[1]]$dist_cent
+      gt <- outliers::grubbs.test(dists)
+      pval <- gt$p.value
+      # conservative way to toss outliers. this checks whether the single largest
+      # distance is an outlier. this is repeated until no more outliers are found
+      if (is.na(pval)) {
+        warning(paste0('p-value for grubbs test was NA. sample size is too ",
+                       "small to implement the test'))
+        break
+      }
+      if (gt$p.value < pvalSet) {
+        toss <- which.max(dists)
+        # IDs in the original data frame
+        sp.toss.coord <- rbind(sp.toss.coord, 
+                               sp::coordinates(pres.inliers)[toss, ])
+        pres <- pres[-toss,]
+      }
+    }
+    if (length(dists) < 3) {
+      warning(paste0('All but two records were deemed outliers. The Grubbs test ',
+                     'may not be appropriate for these data.'))
+    }
+    # toss pairs
+    if (checkPairs) {
+      if (length(pres) < 31 & length(pres) > 3) {
+        pval <- 0
+        dists <- .presPercentile2(pres)[[1]]$dist_cent
+        
+        # By turning off this loop, I'm ensuring that you can only toss 1 pair 
+        # of outliers. with the loop, it tends to find lots of supposed outliers 
+        # very confidently, but by eye, it tends to omit clusters
+        gt <- outliers::grubbs.test(dists,type=20)
+        
+        pval <- gt$p.value
+        # conservative way to toss outliers. this checks whether the single 
+        # largest distance is an outlier. this is repeated until no more outliers are found
+        if (is.na(pval)) {
+          warning('p-value for grubbs test checking for pairs of outliers was NA. sample size is too small to implement the test')
+          break
+        }
+        if(gt$p.value < pvalSet){
+          toss <- utils::tail(order(dists), 2)
+          # IDs in the original data frame
+          sp.toss.coord <- rbind(sp.toss.coord, sp::coordinates(pres)[toss, ])
+          pres <- pres[-toss, ]
+        }
+      }	
+    }
+    if (!is.null(sp.toss.coord)) {
+      coor <- sp::coordinates(pres)
+      sp.toss.id <- apply(sp.toss.coord, 1, 
+                          function(x) which(x[1] == coor[,1] & x[2] == coor[,2]))
+    } 
+  } # end grubbs
+  
+  if (any(method == 'iqr')) {
+    dists <- .presPercentile2(pres)[[1]]$dist_cent
+    sp.toss.id <- .iqrOutlier(dists)
+  }
+  
+  if (any(method == 'dixon')) {
+    if (length(pres) < 3 | length(pres) > 30) {
+      warning(paste0('Dixon test only applies to sample sizes between [3, 30]. ',
+                     'Skipping this analysis.'))
+      return(sp.toss.id)
+    }
+    dists <- .presPercentile2(pres)[[1]]$dist_cent
+    if (length(unique(dists)) == 1) {
+      warning(paste0('All records are the same distance from the spatial ',
+                     'centroid so outliers cannot be detected. maybe your ',
+                     'records come from gridded data. Skipping this analysis.'))
+      return(sp.toss.id)
+    }
+    dt <- outliers::dixon.test(dists, type = 0, two.sided = FALSE)
+    if (dt$p.value < pvalSet) sp.toss.id <- which.max(dists)
+  }
+  
+  if (any(method == 'rosner')) {
+    dists <- .presPercentile2(pres)[[1]]$dist_cent
+    if (kRosner <= length(dists)) {
+      warning(paste0('kRosner must be an integer less than the number of presence',
+                     ' records, skipping this taxon'))
+      return(sp.toss.id)
+    }
+    rt <- EnvStats::rosnerTest(dists, kRosner, alpha = pvalSet)
+    if (any(rt$all.stats$Outlier)) sp.toss.id <- utils::tail(order(dists), kRosner)
+  }
+  return(sp.toss.id)
+}
 #======================================================================
 #======================================================================
 #' @title Find outlying occurrence data in geographic space

@@ -1,3 +1,63 @@
+#' @title Omit Outlying Points Based on Percentile Distance from Centroid
+#' @description
+#' This function removes outliers from a spatial data set based on the distance
+#' of each point to the centroid. Points that are farther than the specified 
+#' percentile are considered outliers and are excluded.
+#' @param xy An `sf` object containing the spatial points.
+#' @param percent A numeric value between 0 and 100 indicating the percentile
+#'   threshold for outlier removal. If NULL, no outliers are removed. Default is NULL.
+#' @return A list with two elements: `xy`, the cleaned `sf` object without
+#'   outliers, and `out_quantile`, an `sf` object containing the excluded outliers.
+#' @export
+.presPercentile2 <- function(xy, percent = NULL) {
+  
+  # Input validation
+  if (!inherits(xy, "sf")) {
+    stop("The 'xy' parameter must be an 'sf' object.")
+  }
+  
+  if (!is.null(percent)) {
+    if (!is.numeric(percent) || length(percent) != 1) {
+      stop("The 'percent' parameter must be a single numeric value.")
+    }
+    
+    if (percent > 100) {
+      warning("Percent value is greater than 100. Using all points.")
+      percent <- 100
+    }
+    
+    if (percent < 0) {
+      stop("The 'percent' parameter must be between 0 and 100.")
+    }
+  }
+  
+  # Check if CRS is assigned
+  if (is.null(sf::st_crs(xy))) {
+    stop(paste0("The 'xy' object does not have a CRS assigned. Please assign ",
+                "a CRS before using this function."))
+  }
+  
+  # Compute centroid
+  cent <- sf::st_combine(xy) |> sf::st_centroid()
+  
+  # Calculate distances to centroid
+  dist_cent <- sf::st_distance(xy, cent)
+  xy$dist_cent <- dist_cent
+  
+  # Initialize result list
+  result <- list(xy = xy, out_quantile = NULL)
+  
+  # Remove outliers based on percentile
+  if (!is.null(percent) && percent < 100) {
+    dist_quan <- stats::quantile(dist_cent, percent / 100)
+    out_indices <- which(dist_cent > dist_quan)
+    result <- list(xy = xy[-out_indices, ], 
+                   out_quantile = xy[out_indices, ])
+  }
+  
+  return(result)
+}
+
 #' omit outlying pres
 #' @param xy data.frame with 2 columns
 #' @param percent numeric on [0, 100]
