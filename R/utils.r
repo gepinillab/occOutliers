@@ -43,19 +43,14 @@
   # Calculate distances to centroid
   dist_cent <- sf::st_distance(xy, cent)
   xy$dist_cent <- dist_cent
-  
-  # Initialize result list
-  result <- list(xy = xy, out_quantile = NULL)
-  
+  xy$out_quantile <- NULL
   # Remove outliers based on percentile
   if (!is.null(percent) && percent < 100) {
     dist_quan <- stats::quantile(dist_cent, percent / 100)
-    out_indices <- which(dist_cent > dist_quan)
-    result <- list(xy = xy[-out_indices, ], 
-                   out_quantile = xy[out_indices, ])
+    out_indices <- (dist_cent > dist_quan)
+    xy$out_quantile <- out_indices
   }
-  
-  return(result)
+  return(xy)
 }
 
 #' omit outlying pres
@@ -116,13 +111,10 @@
 
 #' find records mor than 1.5 times the interquartile range beyond the upper quartile 
 #' @param dists a numeric vector
-.iqrOutlier=function(dists){
-  
-  #q1=stats::quantile(dists, .25)
-  q3=stats::quantile(dists, .25)
-  iqr=stats::IQR(dists)
-  which(dists > (q3 + 1.5*iqr))
-  #subset(df, df$A> (Q1 - 1.5*IQR) & df$A< (Q3 + 1.5*IQR))
+.iqrOutlier <- function(dists) {
+  q3 <- stats::quantile(dists, .25)
+  iqr <- stats::IQR(dists)
+  return(dists > (q3 + 1.5 * iqr))
 }
 
 #' Vectorized version of grep

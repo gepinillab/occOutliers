@@ -51,9 +51,13 @@ findOutlyingPoints=function(pres,
                             kRosner=3,
                             verbose=TRUE){
   
-  #  for testing
-  #  pres=myPresDF;  verbose=T
-  #  envOutliers=T; spOutliers=T;  pval=1e-5; 
+  # Create column id
+  if (!"id" %in% colnames(pres)) {
+    pres$id <- 1:nrow(pres)
+  }
+  
+  # Keep rack of original ID
+  original_id <- pres$id
   
   if(!any(class(pres)==c('SpatialPoints','SpatialPointsDataFrame'))) stop('Please make your presence data a SpatialPoints or SpatialPointsDataFrame object and try again')
   
