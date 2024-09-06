@@ -2,7 +2,10 @@ Package: occOutliers
 Type: Package
 Title: Identify Outlying Species Occurrence Records
 Version: 0.1.0
-Authors@R: c(person('Cory','Merow',email='cory.merow@gmail.com',role=c('aut','cre')))
+Authors@R: c(
+    person('Cory', 'Merow', email = 'cory.merow@gmail.com', role = c('aut')),
+    person('Gonzalo E.', 'Pinilla-Buitrago', email = 'gepinillab@gmail.com', 
+           role = c('aut','cre')))
 Description: Identify outlying species occurrence records (e.g., in species distribution
     modeling applications) using statistical tests. Outliers can be identified in 
     geographic or environmental space. Outliers are flagged and visualized so that 
