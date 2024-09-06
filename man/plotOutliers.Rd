@@ -2,52 +2,49 @@
 % Please edit documentation in R/plots.R
 \name{plotOutliers}
 \alias{plotOutliers}
-\title{Find outlying occurrence data}
+\title{Plot outlying occurrence data}
 \usage{
 plotOutliers(
   pres,
-  env = NULL,
-  outlierNames = c("spOutlier", "envOutlier"),
+  r = NULL,
   shpToPlot = NULL,
-  legLoc = "bottomleft"
+  legLoc = "topleft",
+  bufferDist = 0.2
 )
 }
 \arguments{
-\item{pres}{a `SpatialPoints` or `SpatialPointsDataFrame` object describing the locations of species records. A `SpatialPointsDataFrame` containing the values of environmental variables to be used must be supplied if `envOutliers=TRUE`}
+\item{pres}{an `sf` object of POINT geometry describing the locations of 
+species records. It must contain columns for spatial and/or environmental 
+outliers.}
 
-\item{env}{an optional raster object to be plotted}
+\item{r}{an optional `terra::SpatRaster` object, representing environmental
+data to plot in the background. If NULL, no environmental layer is plotted.}
 
-\item{outlierNames}{character vector indicating the name of the columns in `pres` to plot. e.g., c('spOutlier','envOutlier')}
+\item{shpToPlot}{an optional `sf` object representing polygons to be 
+plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile 
+is cropped to match the plotting extent of the presence points.}
 
-\item{shpToPlot}{an optional spatialPolygons object to be plotted}
+\item{legLoc}{character, indicating the position of the legend on the plot. 
+Options are `'bottomleft'`, `'topright'`, etc.}
 
-\item{legLoc}{legend location, of the form 'bottomleft', 'topright', etc.}
+\item{bufferPercent}{numeric, indicating the buffer distance as a proportion of 
+the plot's largest axis (x or y) by which to expand the plot extent. Default 
+is 0.5 (i.e., 50% of the largest axis).}
 }
 \value{
-nothing
+A plot showing species presence points, spatial and/or environmental 
+outliers, with optional background layers and shapefiles.
 }
 \description{
-Spatial or environmental outliers
+Plots spatial and/or environmental outliers for species 
+occurrence data.
 }
 \details{
-See Examples.
-}
-\examples{
-myPres=read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-                            package='occOutliers'))
-myPres=myPres[complete.cases(myPres),]
-sp::coordinates(myPres)=c(1,2)
-myEnv=raster::stack(system.file('extdata/AllEnv.tif',package='occOutliers'))
-names(myEnv)=read.table(system.file('extdata/layerNames.csv',package='occOutliers'))[,1]
-myPresDF=sp::SpatialPointsDataFrame(myPres,data.frame(raster::extract(myEnv,myPres)))
-presOut=findOutlyingPoints(pres=myPresDF,
-                           spOutliers=TRUE,
-                           envOutliers=TRUE,
-                           pval=1e-5)
-world.shp=readRDS(system.file('extdata/worldShpMollwide.rds',package='occOutliers'))
-plotOutliers(presOut,shpToPlot = world.shp)
-
+This function plots the occurrence points, highlighting spatial and 
+environmental outliers. If environmental data or a shapefile is provided, it 
+is included in the background for context. The legend is dynamically 
+adjusted based on whether spatial and/or environmental outliers are detected.
 }
 \author{
-Cory Merow <cory.merow@gmail.com>
+Cory Merow <cory.merow@gmail.com>, Gonzalo E. Pinilla-Buitrago
 }

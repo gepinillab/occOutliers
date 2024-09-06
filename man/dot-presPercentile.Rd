@@ -2,15 +2,22 @@
 % Please edit documentation in R/utils.r
 \name{.presPercentile}
 \alias{.presPercentile}
-\title{omit outlying pres}
+\title{Omit Outlying Points Based on Percentile Distance from Centroid}
 \usage{
-.presPercentile(xy, percent = 95)
+.presPercentile(xy, percent = NULL)
 }
 \arguments{
-\item{xy}{data.frame with 2 columns}
+\item{xy}{An `sf` object containing the spatial points.}
 
-\item{percent}{numeric on [0, 100]}
+\item{percent}{A numeric value between 0 and 100 indicating the percentile
+threshold for outlier removal. If NULL, no outliers are removed. Default is NULL.}
+}
+\value{
+A list with two elements: `xy`, the cleaned `sf` object without
+  outliers, and `out_quantile`, an `sf` object containing the excluded outliers.
 }
 \description{
-omit outlying pres
+This function removes outliers from a spatial data set based on the distance
+of each point to the centroid. Points that are farther than the specified 
+percentile are considered outliers and are excluded.
 }

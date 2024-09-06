@@ -8,7 +8,7 @@ spatialOutliers(
   pres,
   pvalSet = 1e-05,
   method = "grubbs",
-  checkPairs = TRUE,
+  checkPairs = FALSE,
   kRosner = NULL
 )
 }
@@ -25,7 +25,7 @@ outlier test statistics. Default is 1e-5.}
 \item{checkPairs}{Logical; check for a single pair of outliers using the 
 Grubbs test. This can only be performed for sample sizes <30. Only a single 
 test is used because repeating it tends to throw out more points than seem 
-reasonable, by eye. The value has no effect unless `method = 'grubbs'`. Default is TRUE.}
+reasonable, by eye. The value has no effect unless `method = 'grubbs'`. Default is FALSE.}
 
 \item{kRosner}{Integer between 1 and 10. Determines the number of outliers 
 suspected with a Rosner test. The value has no effect unless `method='rosner'`. 
@@ -48,7 +48,7 @@ myPres <- myPres[complete.cases(myPres),]
 myPres <- st_as_sf(myPres, coords = c("longitude", "latitude"), crs = 4326)
 
 # Find spatial outliers
-presOut <- findSpatialOutliers2(pres = myPres, pvalSet = 1e-5)
+presOut <- spatialOutliers(pres = myPres, pvalSet = 1e-5)
 
 }
 \author{
