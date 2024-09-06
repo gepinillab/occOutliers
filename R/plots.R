@@ -1,75 +1,141 @@
-#' @title Find outlying occurrence data
-#'
-#' @description Spatial or environmental outliers
-#'
-#' @details
-#' See Examples.
-#'
-#' @param pres a `SpatialPoints` or `SpatialPointsDataFrame` object describing the locations of species records. A `SpatialPointsDataFrame` containing the values of environmental variables to be used must be supplied if `envOutliers=TRUE`
-#' @param env an optional raster object to be plotted
-#' @param outlierNames character vector indicating the name of the columns in `pres` to plot. e.g., c('spOutlier','envOutlier')
-#' @param shpToPlot an optional spatialPolygons object to be plotted
-#' @param legLoc legend location, of the form 'bottomleft', 'topright', etc.
-# @keywords
+#' @title Plot outlying occurrence data
+#' @description Plots spatial and/or environmental outliers for species 
+#' occurrence data.
+#' @details This function plots the occurrence points, highlighting spatial and 
+#' environmental outliers. If environmental data or a shapefile is provided, it 
+#' is included in the background for context. The legend is dynamically 
+#' adjusted based on whether spatial and/or environmental outliers are detected.
+#' @param pres an `sf` object of POINT geometry describing the locations of 
+#' species records. It must contain columns for spatial and/or environmental 
+#' outliers.
+#' @param r an optional `terra::SpatRaster` object, representing environmental
+#' data to plot in the background. If NULL, no environmental layer is plotted.
+#' @param shpToPlot an optional `sf` object representing polygons to be 
+#' plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile 
+#' is cropped to match the plotting extent of the presence points.
+#' @param legLoc character, indicating the position of the legend on the plot. 
+#' Options are `'bottomleft'`, `'topright'`, etc.
+#' @param bufferPercent numeric, indicating the buffer distance as a proportion of 
+#' the plot's largest axis (x or y) by which to expand the plot extent. Default 
+#' is 0.5 (i.e., 50% of the largest axis).
+#' @return A plot showing species presence points, spatial and/or environmental 
+#' outliers, with optional background layers and shapefiles.
 #' @export
-#'
-#' @examples
-#' myPres=read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-#'                             package='occOutliers'))
-#' myPres=myPres[complete.cases(myPres),]
-#' sp::coordinates(myPres)=c(1,2)
-#' myEnv=raster::stack(system.file('extdata/AllEnv.tif',package='occOutliers'))
-#' names(myEnv)=read.table(system.file('extdata/layerNames.csv',package='occOutliers'))[,1]
-#' myPresDF=sp::SpatialPointsDataFrame(myPres,data.frame(raster::extract(myEnv,myPres)))
-#' presOut=findOutlyingPoints(pres=myPresDF,
-#'                            spOutliers=TRUE,
-#'                            envOutliers=TRUE,
-#'                            pval=1e-5)
-#' world.shp=readRDS(system.file('extdata/worldShpMollwide.rds',package='occOutliers'))
-#' plotOutliers(presOut,shpToPlot = world.shp)
-#' 
-#' @return nothing
-#' @author Cory Merow <cory.merow@@gmail.com>
-# @note
-# @seealso
-# @references
-# @aliases - a list of additional topic names that will be mapped to
-# this documentation when the user looks them up from the command
-# line.
-# @family - a family name. All functions that have the same family tag will be linked in the documentation.
+#' @author Cory Merow <cory.merow@@gmail.com>, Gonzalo E. Pinilla-Buitrago
 
-# will need to specify which cols to plot
-plotOutliers=function(pres,env=NULL,outlierNames=c('spOutlier','envOutlier'),
-                      shpToPlot=NULL,legLoc='bottomleft'){
-  #  for testing
-  #  pres=presOut; env=NULL; shpToPlot=NULL;plotFile=NULL; outlierNames=c('spOutlier','envOutlier')
+plotOutliers <- function(pres, r = NULL, 
+                         shpToPlot = NULL, legLoc = 'topleft', 
+                         bufferDist = 0.2) {
   
-  #if(!is.null(plotFile)) png(plotFile,h=1000,w=1000)
-  pe=raster::extent(pres)
-  ydif=pe[4]-pe[3] ; xdif=pe[2]-pe[1] # for plotting
-  pe[1]=pe[1]-xdif; pe[2]=pe[2]+xdif; pe[3]=pe[3]-ydif; pe[4]=pe[4]+ydif
+  # Check that 'pres' is an sf object with POINT geometry
+  if (!inherits(pres, "sf") || sf::st_geometry_type(pres, by_geometry = FALSE) != "POINT") {
+    stop("pres must be an sf object with POINT geometry")
+  }
   
-  if(length(outlierNames)==1){ toss=which(pres@data[,outlierNames])
-  } else { toss=which(apply(pres@data[,outlierNames],1,any))}
-  if(length(toss)>1) { pres0=pres[-toss,]
-  } else {pres0=pres}
-  if(!is.null(env)){
-    env.bg=raster::crop(env[[1]],pe)
-    raster::plot(env.bg,col='grey50',legend=FALSE)
-    graphics::points(pres0,pch=3,cex=1.5,col='black')
+  # Check for out_spatial and out_env columns, and provide warning if not found
+  if (!"out_spatial" %in% colnames(pres) & !"out_env" %in% colnames(pres)) {
+    warning(paste0("The 'out_spatial' or  'out_env' columns are not found ",
+                   "in 'pres'. This is typically generated by the 'findOutliers'",
+                   ", 'envOutliers' or 'spatialOutliers' functions."))
+  }
+  
+  # Get extent for plotting
+  bbox <- sf::st_bbox(pres)
+  xdif <- bbox['xmax'] - bbox['xmin']
+  ydif <- bbox['ymax'] - bbox['ymin']
+  
+  # Apply buffer distance to the plot extent
+  plot_extent <- c(bbox['xmin'] - xdif * bufferDist, bbox['xmax'] + xdif * bufferDist, 
+                   bbox['ymin'] - ydif * bufferDist, bbox['ymax'] + ydif * bufferDist)
+  
+  # Identify rows without outliers
+  toss <- integer(0)
+  if ("out_spatial" %in% colnames(pres)) {
+    toss <- union(toss, which(pres$out_spatial))
+  }
+  if ("out_env" %in% colnames(pres)) {
+    toss <- union(toss, which(pres$out_env))
+  }
+  
+  if (length(toss) > 0) {
+    pres_no_outliers <- pres[-toss,]
   } else {
-    sp::plot(pres0,pch=3,cex=1.5,col='black',xlim=c(pe[1],pe[2]),ylim=c(pe[3],pe[4]))
+    pres_no_outliers <- pres
   }
-  if(!is.null(pres$spOutlier)){
-    graphics::points(pres[pres$spOutlier,],pch=16,cex=1.3,col='red3')
-  }
-  if(!is.null(pres$envOutlier)){
-    graphics::points(pres[pres$envOutlier,],pch=16,cex=.9,col='steelblue3')
-  }
-  if(!is.null(shpToPlot)) sp::plot(shpToPlot,add=TRUE,lwd=.7,border='grey40')
   
-  graphics::legend(legLoc,legend=c('good presence','spatial outlier','environmental outlier'),
-         pch=c(3,16,16), col=c('black','red3','steelblue3'),bty='n',cex=1,pt.cex=1)
-  #if(!is.null(plotFile)) dev.off()
-
+  # Plot the background environment if available
+  if (!is.null(r)) {
+    if (!inherits(r, "SpatRaster")) stop("r must be a terra::SpatRaster object")
+    r_bg <- terra::crop(r[[1]], ext(c(plot_extent[1], plot_extent[2], 
+                                      plot_extent[3], plot_extent[4])))
+    plot(r_bg, col = 'grey50', legend = FALSE)
+    graphics::points(sf::st_coordinates(pres_no_outliers), pch = 4, 
+                     cex = 1.5, col = 'black')
+  } else {
+    plot(sf::st_geometry(pres_no_outliers), pch = 4, cex = 1.5, col = 'black', 
+         xlim = c(plot_extent[1], plot_extent[2]), 
+         ylim = c(plot_extent[3], plot_extent[4]))
+  }
+  
+  # Add spatial outliers (if present)
+  if (!is.null(pres$out_spatial)) {
+    graphics::points(sf::st_coordinates(pres[pres$out_spatial,]), 
+                     pch = 16, cex = 1.3, col = 'red3')
+  }
+  
+  # Add environmental outliers (if present)
+  if (!is.null(pres$out_env)) {
+    graphics::points(sf::st_coordinates(pres[pres$out_env,]), 
+                     pch = 16, cex = 0.9, col = 'steelblue3')
+  }
+  
+  # Plot shapefile if provided, cropped to the extent of the presence points
+  if (!is.null(shpToPlot)) {
+    if (!inherits(shpToPlot, "sf")) stop("shpToPlot must be an sf object")
+    if (sf::st_crs(shpToPlot) != sf::st_crs(bbox)) {
+      warning(paste0("The CRS of 'shpToPlot' and 'pres' are not the same. Plot ",
+                     "of shapefile skipped."))
+    }
+    # Crop the shapefile to match the plotting extent
+    shp_cropped <- sf::st_crop(shpToPlot, sf::st_bbox(plot_extent))
+    plot(sf::st_geometry(shp_cropped), add = TRUE, lwd = 0.7, border = 'grey40')
+  }
+  
+  # Dynamically generate legend based on what outliers were plotted
+  legend_labels <- c("good presence")
+  legend_pch <- c(4)
+  legend_col <- c("black")
+  
+  if (!is.null(pres$out_spatial) && any(pres$out_spatial, na.rm = TRUE)) {
+    legend_labels <- c(legend_labels, "spatial outlier")
+    legend_pch <- c(legend_pch, 16)
+    legend_col <- c(legend_col, "red3")
+  }
+  
+  if (!is.null(pres$out_env) && any(pres$out_env, na.rm = TRUE)) {
+    legend_labels <- c(legend_labels, "environmental outlier")
+    legend_pch <- c(legend_pch, 16)
+    legend_col <- c(legend_col, "steelblue3")
+  }
+  
+  # Dynamically place the legend based on the legLoc parameter
+  if (legLoc %in% c('topleft', 'topright', 'bottomleft', 'bottomright')) {
+    if (legLoc == 'topleft') {
+      legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
+      legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
+    } else if (legLoc == 'topright') {
+      legend_x <- plot_extent[2] - 0.40 * (plot_extent[2] - plot_extent[1])
+      legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
+    } else if (legLoc == 'bottomleft') {
+      legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
+      legend_y <- plot_extent[3] + 0.15 * (plot_extent[4] - plot_extent[3])
+    } else if (legLoc == 'bottomright') {
+      legend_x <- plot_extent[2] - 0.40 * (plot_extent[2] - plot_extent[1])
+      legend_y <- plot_extent[3] + 0.15 * (plot_extent[4] - plot_extent[3])
+    }
+    
+    # Draw the legend at the dynamically determined coordinates
+    graphics::legend(x = legend_x, y = legend_y, legend = legend_labels, 
+                     pch = legend_pch, col = legend_col, bty = 'n', cex = 1, pt.cex = 1)
+  }
 }
