@@ -38,19 +38,6 @@ Returns the input sf object with an additional column 'out_spatial'
 \description{
 Identifies spatial outliers in species occurrence data.
 }
-\examples{
-library(sf)
-
-# Read data and convert to sf object
-myPres <- read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-                               package='occOutliers'))
-myPres <- myPres[complete.cases(myPres),]
-myPres <- st_as_sf(myPres, coords = c("longitude", "latitude"), crs = 4326)
-
-# Find spatial outliers
-presOut <- spatialOutliers(pres = myPres, pvalSet = 1e-5)
-
-}
 \author{
 Cory Merow <cory.merow@gmail.com>, Gonzalo E. Pinilla-Buitrago
 }

@@ -15,29 +15,9 @@
 #' @param kRosner Integer between 1 and 10. Determines the number of outliers 
 #'   suspected with a Rosner test. The value has no effect unless `method = 'rosner'`. 
 #'   Default is NULL.
-#'
 #' @return Returns the input sf object or data.frame with an additional column 'out_env' 
 #'   indicating whether each point is considered a environmental outlier (TRUE) or not (FALSE).
-#'
 #' @export
-#'
-#' @examples
-#' library(sf)
-#' library(terra)
-
-#' # Read data and convert to sf object
-#' myPres <- read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-#'                                package='occOutliers'))
-#' myPres <- myPres[complete.cases(myPres),]
-#' myPres <- st_as_sf(myPres, coords = c("Longitude", "Latitude"))
-
-#' # Load environmental data
-#' env <- terra::rast(system.file('extdata/envs.tif', package = 'occOutliers'))
-#' envData <- terra::extract(env, myPres, ID = FALSE)
-#' myPres <- cbind(myPres, envData)
-#' # Find environmental outliers
-#' presOut <- envOutliers(pres = myPres, pvalSet = 1e-5)
-#' 
 #' @author Cory Merow <cory.merow@@gmail.com>, Gonzalo E. Pinilla-Buitrago
 envOutliers <- function(pres,
                         pvalSet = 1e-5,
@@ -98,7 +78,7 @@ envOutliers <- function(pres,
   
   # Calculate the covariance matrix (for Mahalanobis)
   if (distEnvMethod == "mahalanobis") {
-    cov_matrix <- cov(p.env)
+    cov_matrix <- stats::cov(p.env)
   }
   
   
@@ -123,7 +103,7 @@ envOutliers <- function(pres,
   )
   
   # Remove outlier column
-  pres <- pres |> dplyr::select(-outlier)
+  pres$outlier <- NULL
   
   return(pres)
 }
@@ -141,7 +121,7 @@ cosine_similarity <- function(x, cent) {
 }
 
 mahalanobis_dist <- function(x, cent, cov_matrix) {
-  mahalanobis(x, cent, cov_matrix)
+  stats::mahalanobis(x, cent, cov_matrix)
 }
 
 # jaccard_dist <- function(x, cent) {

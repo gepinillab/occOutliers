@@ -1,28 +1,26 @@
 #' @title Plot outlying occurrence data
 #' @description Plots spatial and/or environmental outliers for species 
-#' occurrence data.
+#'  occurrence data.
 #' @details This function plots the occurrence points, highlighting spatial and 
-#' environmental outliers. If environmental data or a shapefile is provided, it 
-#' is included in the background for context. The legend is dynamically 
-#' adjusted based on whether spatial and/or environmental outliers are detected.
+#'  environmental outliers. If environmental data or a shapefile is provided, it 
+#'  is included in the background for context. The legend is dynamically 
+#'  adjusted based on whether spatial and/or environmental outliers are detected.
 #' @param pres an `sf` object of POINT geometry describing the locations of 
-#' species records. It must contain columns for spatial and/or environmental 
-#' outliers.
+#'  species records. It must contain columns for spatial and/or environmental 
+#'  outliers.
 #' @param r an optional `terra::SpatRaster` object, representing environmental
-#' data to plot in the background. If NULL, no environmental layer is plotted.
+#'  data to plot in the background. If NULL, no environmental layer is plotted.
 #' @param shpToPlot an optional `sf` object representing polygons to be 
-#' plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile 
-#' is cropped to match the plotting extent of the presence points.
+#'  plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile 
+#'  is cropped to match the plotting extent of the presence points.
 #' @param legLoc character, indicating the position of the legend on the plot. 
-#' Options are `'bottomleft'`, `'topright'`, etc.
-#' @param bufferPercent numeric, indicating the buffer distance as a proportion of 
-#' the plot's largest axis (x or y) by which to expand the plot extent. Default 
-#' is 0.5 (i.e., 50% of the largest axis).
-#' @return A plot showing species presence points, spatial and/or environmental 
-#' outliers, with optional background layers and shapefiles.
-#' @export
+#'  Options are `'bottomleft'`, `'topright'`, etc.
+#' @param bufferDist numeric, indicating the buffer distance as a proportion of 
+#'  the plot's largest axis (x or y) by which to expand the plot extent. Default 
+#'  is 0.5 (i.e., 50 percent of the largest axis).
+#' @return NULL
 #' @author Cory Merow <cory.merow@@gmail.com>, Gonzalo E. Pinilla-Buitrago
-
+#' @export
 plotOutliers <- function(pres, r = NULL, 
                          shpToPlot = NULL, legLoc = 'topleft', 
                          bufferDist = 0.2) {
@@ -66,8 +64,8 @@ plotOutliers <- function(pres, r = NULL,
   # Plot the background environment if available
   if (!is.null(r)) {
     if (!inherits(r, "SpatRaster")) stop("r must be a terra::SpatRaster object")
-    r_bg <- terra::crop(r[[1]], ext(c(plot_extent[1], plot_extent[2], 
-                                      plot_extent[3], plot_extent[4])))
+    r_bg <- terra::crop(r[[1]], terra::ext(c(plot_extent[1], plot_extent[2], 
+                                             plot_extent[3], plot_extent[4])))
     plot(r_bg, col = 'grey50', legend = FALSE)
     graphics::points(sf::st_coordinates(pres_no_outliers), pch = 4, 
                      cex = 1.5, col = 'black')

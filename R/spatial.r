@@ -13,24 +13,9 @@
 #' @param kRosner Integer between 1 and 10. Determines the number of outliers 
 #'   suspected with a Rosner test. The value has no effect unless `method='rosner'`. 
 #'   Default is NULL.
-#'
 #' @return Returns the input sf object with an additional column 'out_spatial' 
 #'   indicating whether each point is considered a spatial outlier (TRUE) or not (FALSE).
-#'
 #' @export
-#'
-#' @examples
-#' library(sf)
-#' 
-#' # Read data and convert to sf object
-#' myPres <- read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-#'                                package='occOutliers'))
-#' myPres <- myPres[complete.cases(myPres),]
-#' myPres <- st_as_sf(myPres, coords = c("longitude", "latitude"), crs = 4326)
-#' 
-#' # Find spatial outliers
-#' presOut <- spatialOutliers(pres = myPres, pvalSet = 1e-5)
-#' 
 #' @author Cory Merow <cory.merow@@gmail.com>, Gonzalo E. Pinilla-Buitrago
 spatialOutliers <- function(pres,
                             pvalSet = 1e-5,
@@ -64,7 +49,7 @@ spatialOutliers <- function(pres,
   )
   
   # Remove outlier column
-  pres <- pres |> dplyr::select(-outlier)
+  pres$outlier <- NULL
   
   return(pres)
 }

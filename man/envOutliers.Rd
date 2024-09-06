@@ -44,22 +44,6 @@ Returns the input sf object or data.frame with an additional column 'out_env'
 \description{
 Identifies environmental  outliers in species occurrence data.
 }
-\examples{
-library(sf)
-library(terra)
-# Read data and convert to sf object
-myPres <- read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-                               package='occOutliers'))
-myPres <- myPres[complete.cases(myPres),]
-myPres <- st_as_sf(myPres, coords = c("Longitude", "Latitude"))
-# Load environmental data
-env <- terra::rast(system.file('extdata/envs.tif', package = 'occOutliers'))
-envData <- terra::extract(env, myPres, ID = FALSE)
-myPres <- cbind(myPres, envData)
-# Find environmental outliers
-presOut <- envOutliers(pres = myPres, pvalSet = 1e-5)
-
-}
 \author{
 Cory Merow <cory.merow@gmail.com>, Gonzalo E. Pinilla-Buitrago
 }

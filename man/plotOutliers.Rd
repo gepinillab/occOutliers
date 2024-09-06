@@ -27,23 +27,19 @@ is cropped to match the plotting extent of the presence points.}
 \item{legLoc}{character, indicating the position of the legend on the plot. 
 Options are `'bottomleft'`, `'topright'`, etc.}
 
-\item{bufferPercent}{numeric, indicating the buffer distance as a proportion of 
+\item{bufferDist}{numeric, indicating the buffer distance as a proportion of 
 the plot's largest axis (x or y) by which to expand the plot extent. Default 
-is 0.5 (i.e., 50% of the largest axis).}
-}
-\value{
-A plot showing species presence points, spatial and/or environmental 
-outliers, with optional background layers and shapefiles.
+is 0.5 (i.e., 50 percent of the largest axis).}
 }
 \description{
 Plots spatial and/or environmental outliers for species 
-occurrence data.
+ occurrence data.
 }
 \details{
 This function plots the occurrence points, highlighting spatial and 
-environmental outliers. If environmental data or a shapefile is provided, it 
-is included in the background for context. The legend is dynamically 
-adjusted based on whether spatial and/or environmental outliers are detected.
+ environmental outliers. If environmental data or a shapefile is provided, it 
+ is included in the background for context. The legend is dynamically 
+ adjusted based on whether spatial and/or environmental outliers are detected.
 }
 \author{
 Cory Merow <cory.merow@gmail.com>, Gonzalo E. Pinilla-Buitrago
