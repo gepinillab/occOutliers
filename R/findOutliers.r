@@ -1,93 +1,80 @@
-#' @title Find outlying occurrence data
-#'
-#' @description Spatial or environmental outliers
-#'
-#' @details
-#' See Examples.
-#'
-#' @param pres a `SpatialPoints` or `SpatialPointsDataFrame` object describing the locations of species records. A `SpatialPointsDataFrame` containing the values of environmental variables to be used must be supplied if `envOutliers=TRUE`
-#' @param spOutliers logical; perform spatial outlier analysis
-#' @param envOutliers logical; perform environmental outlier analysis
-#' @param method character; options are 'iqr', 'grubbs', 'dixon', 'rosner'. Only a single value can be used; if mutliple tests are desired, call `findOuliers` multiple times specifying different methods.
-#' @param pval user-specified p-value for assessing the significance of Grubbs test statistic.
-#' @param checkPairs logical; check for a single pair of outliers using the Grubbs test. This can only be performed for sample sizes <30. Only a single test is used because repeating it tends to throw out more points than seem reasonable, by eye. The value has no effect unless `method='grubbs'`.
-#' @param kRosner integer between 1 and 10. Determines the number of outliers suspected with a Rosner test. The value has no effect unless `method='rosner'`.
-#' @param verbose logical; print messages
-# @keywords
+#' @title Detect Spatial and Environmental Outliers in Occurrence Data
+#' @description This function identifies spatial and environmental outliers in 
+#' species occurrence data. It can apply different statistical methods to 
+#' detect geographic outliers and environmental anomalies.
+#' @details The function takes as input an `sf` object with POINT geometry and 
+#' applies spatial and/or environmental outlier detection methods. Users can 
+#' choose between multiple outlier detection methods, including Grubbs, Dixon, 
+#' IQR, or Rosner. For environmental outlier detection, the function calculates 
+#' the distance between occurrences based on either Euclidean or Gower distance.
+#' @param pres An `sf` object with POINT geometry representing species 
+#' occurrence data.
+#' @param spatial Logical; if `TRUE`, performs spatial outlier detection.
+#' @param environmental Logical; if `TRUE`, performs environmental outlier 
+#' detection.
+#' @param method Character; method for detecting outliers. Options are 'grubbs',
+#'  'iqr', 'dixon', or 'rosner'. Only a single method can be used at a time.
+#' @param distEnvMethod Character; method for calculating environmental 
+#' distances. Options are 'euclidian' or 'gower'.
+#' @param scaleData Logical; if `TRUE`, scales environmental data before 
+#' calculating distances.
+#' @param pval Numeric; user-specified p-value for assessing the significance 
+#' of the test statistic.
+#' @param checkPairs Logical; if `TRUE`, checks for a pair of outliers using 
+#' the Grubbs test (only applicable for sample sizes < 30).
+#' @param kRosner Integer; number of outliers to test for with the Rosner test. 
+#' Applicable only when `method = 'rosner'`.
+#' @param verbose Logical; if `TRUE`, prints messages about the number of d
+#' detected outliers.
+#' @author Cory Merow <cory.merow@@gmail.com>, Gonzalo E. Pinilla-Buitrago
 #' @export
-#'
-#' @examples
-#' myPres=read.csv(system.file('extdata/SpeciesCSVs/Camissonia_tanacetifolia.csv',
-#'                             package='occOutliers'))
-#' myPres=myPres[complete.cases(myPres),]
-#' sp::coordinates(myPres)=c(1,2)
-#' myEnv=raster::stack(system.file('extdata/AllEnv.tif',package='occOutliers'))
-#' names(myEnv)=read.table(system.file('extdata/layerNames.csv',package='occOutliers'))[,1]
-#' myPresDF=sp::SpatialPointsDataFrame(myPres,data.frame(raster::extract(myEnv,myPres)))
-#' presOut=findOutlyingPoints(pres=myPresDF,
-#'                            spOutliers=TRUE,
-#'                            envOutliers=TRUE,
-#'                            pval=1e-5)
-#' world.shp=readRDS(system.file('extdata/worldShpMollwide.rds',package='occOutliers'))
-#' plotOutliers(presOut,shpToPlot = world.shp)
-#' 
-#' @return Returns the SpatialPointsDataFrame provided with additional logical columns indicating spatial outliers (`spOutliers`) and environmental outliers ('`envOutliers`).
-#' @author Cory Merow <cory.merow@@gmail.com>
-# @note
-# @seealso
-# @references
-# @aliases - a list of additional topic names that will be mapped to
-# this documentation when the user looks them up from the command
-# line.
-# @family - a family name. All functions that have the same family tag will be linked in the documentation.
-
-
-findOutlyingPoints=function(pres,
-                            spOutliers=TRUE,
-                            envOutliers=TRUE,
-                            method='grubbs',
-                            pval=1e-5,
-                            checkPairs=TRUE,
-                            kRosner=3,
-                            verbose=TRUE){
+findOutliers <- function(pres,
+                         spatial = TRUE,
+                         environmental = TRUE,
+                         method = 'grubbs',
+                         distEnvMethod = 'euclidean',
+                         scaleData = TRUE,
+                         pval = 1e-5,
+                         checkPairs = FALSE,
+                         kRosner = NULL,
+                         verbose = TRUE) {
   
-  # Create column id
-  if (!"id" %in% colnames(pres)) {
-    pres$id <- 1:nrow(pres)
-  }
-  
-  # Keep rack of original ID
-  original_id <- pres$id
-  
-  if(!any(class(pres)==c('SpatialPoints','SpatialPointsDataFrame'))) stop('Please make your presence data a SpatialPoints or SpatialPointsDataFrame object and try again')
-  
-  if(spOutliers) { 
-    sp.toss.id=findSpatialOutliers(pres=pres,pvalSet=pval,checkPairs=checkPairs,
-                                   method=method,kRosner=kRosner)
-    if(verbose) print(paste0(length(sp.toss.id),' geographic outlier(s) found with method ',method))
-  } else {sp.toss.id=NULL}
-  
-  if(envOutliers) { 
-    env.toss.id=findEnvOutliers(pres=pres,pvalSet=pval,checkPairs=checkPairs,
-                                method=method,kRosner=kRosner)
-    pres$envOutlier=FALSE
-    pres$envOutlier[env.toss.id]=TRUE
-    if(verbose) print(paste0(length(env.toss.id),' environmental outlier(s) found with method ',method))
-    if(nrow(pres)-length(env.toss.id) < 2){
-      warning(paste0('pretty much all the presences came up as environmental outliers. The only case Ive seen this in was when there were two obvious outliers and all the other presences had the same exact environment. In any case, I cant find any outliers.'))
+  # Detect spatial outliers
+  if (spatial) {
+    pres <- spatialOutliers(pres = pres, 
+                            pvalSet = pval, 
+                            method = method, 
+                            checkPairs = checkPairs, 
+                            kRosner = kRosner)
+    
+    if (verbose) {
+      sp_count <- sum(pres$out_spatial, na.rm = TRUE)
+      print(paste0(sp_count, " geographic outlier(s) found with method ", method))
     }
   }
-  #Pep added
-  if(spOutliers) {
-    if (class(pres)==c('SpatialPoints')) {
-      pres  = sp::SpatialPointsDataFrame(pres,
-                                         data.frame(spOutlier= rep(F,length(pres)))
-      )
+  
+  # Detect environmental outliers
+  if (environmental) {
+    pres <- envOutliers(pres = pres, 
+                        pvalSet = pval, 
+                        method = method, 
+                        distEnvMethod = distEnvMethod,
+                        scaleData = scaleData,
+                        checkPairs = checkPairs, 
+                        kRosner = kRosner)
+    
+    if (verbose) {
+      env_count <- sum(pres$out_env, na.rm = TRUE)
+      print(paste0(env_count, " environmental outlier(s) found with methods ", 
+                   method, " and " , distEnvMethod, " (distance)."))
       
+      if (nrow(pres) - env_count < 2) {
+        warning(paste0("Almost all presences were flagged as environmental ",
+                       "outliers. This often happens when there are two clear ",
+                       "outliers and all other records have the same exact ",
+                       "environmental data."))
+      }
     }
-    pres$spOutlier=FALSE
-    pres$spOutlier[sp.toss.id]=TRUE
   }
-  
   return(pres)
 }
