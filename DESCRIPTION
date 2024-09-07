@@ -21,7 +21,7 @@ Imports:
   stats,
   sf,
   terra
-Suggest:
+Suggests:
   knitr
 RoxygenNote: 7.3.1
 VignetteBuilder: knitr
