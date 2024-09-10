@@ -14,7 +14,7 @@
 #'  plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile 
 #'  is cropped to match the plotting extent of the presence points.
 #' @param legLoc character, indicating the position of the legend on the plot. 
-#'  Options are `'bottomleft'`, `'topright'`, etc.
+#'  Options are `'bottomleft'`, `'topright'`, etc. If NULL, there is no legend.
 #' @param bufferDist numeric, indicating the buffer distance as a proportion of 
 #'  the plot's largest axis (x or y) by which to expand the plot extent. Default 
 #'  is 0.5 (i.e., 50 percent of the largest axis).
@@ -117,23 +117,25 @@ plotOutliers <- function(pres, r = NULL,
   }
   
   # Dynamically place the legend based on the legLoc parameter
-  if (legLoc %in% c('topleft', 'topright', 'bottomleft', 'bottomright')) {
-    if (legLoc == 'topleft') {
-      legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
-      legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
-    } else if (legLoc == 'topright') {
-      legend_x <- plot_extent[2] - 0.40 * (plot_extent[2] - plot_extent[1])
-      legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
-    } else if (legLoc == 'bottomleft') {
-      legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
-      legend_y <- plot_extent[3] + 0.15 * (plot_extent[4] - plot_extent[3])
-    } else if (legLoc == 'bottomright') {
-      legend_x <- plot_extent[2] - 0.40 * (plot_extent[2] - plot_extent[1])
-      legend_y <- plot_extent[3] + 0.15 * (plot_extent[4] - plot_extent[3])
+  if (!is.null(legLoc)) {
+    if (legLoc %in% c('topleft', 'topright', 'bottomleft', 'bottomright')) {
+      if (legLoc == 'topleft') {
+        legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
+        legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
+      } else if (legLoc == 'topright') {
+        legend_x <- plot_extent[2] - 0.50 * (plot_extent[2] - plot_extent[1])
+        legend_y <- plot_extent[4] - 0.05 * (plot_extent[4] - plot_extent[3])
+      } else if (legLoc == 'bottomleft') {
+        legend_x <- plot_extent[1] + 0.05 * (plot_extent[2] - plot_extent[1])
+        legend_y <- plot_extent[3] + 0.25 * (plot_extent[4] - plot_extent[3])
+      } else if (legLoc == 'bottomright') {
+        legend_x <- plot_extent[2] - 0.50 * (plot_extent[2] - plot_extent[1])
+        legend_y <- plot_extent[3] + 0.25 * (plot_extent[4] - plot_extent[3])
+      }
+      
+      # Draw the legend at the dynamically determined coordinates
+      graphics::legend(x = legend_x, y = legend_y, legend = legend_labels, 
+                       pch = legend_pch, col = legend_col, bty = 'n', cex = 1, pt.cex = 1)
     }
-    
-    # Draw the legend at the dynamically determined coordinates
-    graphics::legend(x = legend_x, y = legend_y, legend = legend_labels, 
-                     pch = legend_pch, col = legend_col, bty = 'n', cex = 1, pt.cex = 1)
   }
 }

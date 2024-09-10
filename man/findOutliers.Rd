@@ -30,7 +30,7 @@ detection.}
 'iqr', 'dixon', or 'rosner'. Only a single method can be used at a time.}
 
 \item{distEnvMethod}{Character; method for calculating environmental 
-distances. Options are 'euclidian' or 'gower'.}
+distances. Options are 'euclidian', 'manhattan', 'cosine, or 'mahalanobis'.}
 
 \item{scaleData}{Logical; if `TRUE`, scales environmental data before 
 calculating distances.}
@@ -57,7 +57,8 @@ The function takes as input an `sf` object with POINT geometry and
 applies spatial and/or environmental outlier detection methods. Users can 
 choose between multiple outlier detection methods, including Grubbs, Dixon, 
 IQR, or Rosner. For environmental outlier detection, the function calculates 
-the distance between occurrences based on either Euclidean or Gower distance.
+the distance between occurrences based on either Euclidian, Manhattan, 
+Cosine, or Mahalanobis distance.
 }
 \author{
 Cory Merow <cory.merow@gmail.com>, Gonzalo E. Pinilla-Buitrago

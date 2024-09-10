@@ -25,7 +25,7 @@ plotted (e.g., a shapefile of boundaries or geographic areas). The shapefile
 is cropped to match the plotting extent of the presence points.}
 
 \item{legLoc}{character, indicating the position of the legend on the plot. 
-Options are `'bottomleft'`, `'topright'`, etc.}
+Options are `'bottomleft'`, `'topright'`, etc. If NULL, there is no legend.}
 
 \item{bufferDist}{numeric, indicating the buffer distance as a proportion of 
 the plot's largest axis (x or y) by which to expand the plot extent. Default 
