@@ -1,0 +1,9 @@
+pandoc: 3.1.11
+pkgdown: 2.1.0
+pkgdown_sha: ~
+articles:
+  occOutlier: occOutlier.html
+last_built: 2024-09-10T03:57Z
+urls:
+  reference: https://gepinillab.github.io/occOutliers/reference
+  article: https://gepinillab.github.io/occOutliers/articles
