@@ -66,7 +66,7 @@ plotOutliers <- function(pres, r = NULL,
     if (!inherits(r, "SpatRaster")) stop("r must be a terra::SpatRaster object")
     r_bg <- terra::crop(r[[1]], terra::ext(c(plot_extent[1], plot_extent[2], 
                                              plot_extent[3], plot_extent[4])))
-    plot(r_bg, col = 'grey50', legend = FALSE)
+    terra::plot(r_bg, col = 'grey50', legend = FALSE)
     graphics::points(sf::st_coordinates(pres_no_outliers), pch = 4, 
                      cex = 1.5, col = 'black')
   } else {

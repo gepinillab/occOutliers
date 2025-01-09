@@ -69,7 +69,7 @@ findOutliers <- function(pres,
       print(paste0(env_count, " environmental outlier(s) found with methods ", 
                    method, " and " , distEnvMethod, " (distance)."))
       
-      if (nrow(pres) - env_count < 2) {
+      if (nrow(pres) - env_count <= 3) {
         warning(paste0("Almost all presences were flagged as environmental ",
                        "outliers. This often happens when there are two clear ",
                        "outliers and all other records have the same exact ",

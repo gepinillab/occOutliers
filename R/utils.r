@@ -32,9 +32,8 @@
   }
   
   # Check if CRS is assigned
-  if (is.null(sf::st_crs(xy))) {
-    stop(paste0("The 'xy' object does not have a CRS assigned. Please assign ",
-                "a CRS before using this function."))
+  if (is.null(sf::st_crs(xy)) | is.na(sf::st_crs(xy))) {
+    stop("The 'xy' object does not have a CRS assigned. Please assign a CRS before using this function.")
   }
   
   # Compute centroid
